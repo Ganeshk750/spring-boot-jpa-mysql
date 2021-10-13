@@ -89,26 +89,29 @@ public class LibraryService {
         return authorRepository.save(author);
     }
 
-    public List<String> lendABook (List<BookLendRequest> list){
+    public List<String> lendABook (BookLendRequest request) {
+
+        Optional<Member> memberForId = memberRepository.findById(request.getMemberId());
+        if (!memberForId.isPresent()) {
+            throw new EntityNotFoundException("Member not present in the database");
+        }
+
+        Member member = memberForId.get();
+        if (member.getStatus() != MemberStatus.ACTIVE) {
+            throw new RuntimeException("User is not active to proceed a lending.");
+        }
+
         List<String> booksApprovedToBurrow = new ArrayList<>();
-        list.forEach(bookLendRequest -> {
-            Optional<Book> bookForId = bookRepository.findById(bookLendRequest.getBookId());
-            if(!bookForId.isPresent()){
-                throw new EntityNotFoundException("Cant find any book under given Id");
-            }
 
-            Optional<Member> memberForId = memberRepository.findById(bookLendRequest.getMemberId());
-            if(!memberForId.isPresent()){
-                throw new EntityNotFoundException("Member not present in the database");
-            }
+        request.getBookIds().forEach(bookId -> {
 
-            Member member = memberForId.get();
-            if (member.getStatus() != MemberStatus.ACTIVE) {
-                throw new RuntimeException("User is not active to proceed a lending.");
+            Optional<Book> bookForId = bookRepository.findById(bookId);
+            if (!bookForId.isPresent()) {
+                throw new EntityNotFoundException("Cant find any book under given ID");
             }
 
             Optional<Lend> burrowedBook = lendRepository.findByBookAndStatus(bookForId.get(), LendStatus.BURROWED);
-            if(!burrowedBook.isPresent()){
+            if (!burrowedBook.isPresent()) {
                 booksApprovedToBurrow.add(bookForId.get().getName());
                 Lend lend = new Lend();
                 lend.setMember(memberForId.get());
@@ -118,10 +121,10 @@ public class LibraryService {
                 lend.setDueOn(Instant.now().plus(30, ChronoUnit.DAYS));
                 lendRepository.save(lend);
             }
+
         });
         return booksApprovedToBurrow;
     }
-
 
     public List<Author> readAuthors() {
         return authorRepository.findAll();

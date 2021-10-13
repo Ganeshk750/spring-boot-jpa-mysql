@@ -77,7 +77,7 @@ public class LibraryController {
     }
 
     @PostMapping("/book/lend")
-    public ResponseEntity<List<String>> lendABook(@RequestBody List<BookLendRequest> bookLendRequests) {
+    public ResponseEntity<List<String>> lendABook(@RequestBody BookLendRequest bookLendRequests) {
         return ResponseEntity.ok(libraryService.lendABook(bookLendRequests));
     }
 
